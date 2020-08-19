@@ -29,7 +29,7 @@ for _, strategy in helpers.each_strategy() do
           helpers.stop_kong()
         end)
 
-        it("hashing on header", function()
+        it("#only hashing on header", function()
           local requests = bu.SLOTS * 2 -- go round the balancer twice
 
           bu.begin_testcase_setup(strategy, bp)

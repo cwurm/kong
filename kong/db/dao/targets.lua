@@ -27,62 +27,6 @@ local function sort_targets(a, b)
 end
 
 
-local function clean_history(self, upstream_pk)
-  -- when to cleanup: when less than 10 percent of the entries are valid
-  local cleanup_factor = 0.1
-
-  --cleaning up history, check if it's necessary...
-  local targets, err, err_t = self:select_by_upstream_raw(upstream_pk)
-  if not targets then
-    return nil, err, err_t
-  end
-
-  -- do clean up
-  local seen = {}
-  local delete = {}
-
-  -- Read the history in reverse order, to obtain the most
-  -- recent state of each target.
-  for i = #targets, 1, -1 do
-    local entry = targets[i]
-
-    if seen[entry.target] then
-      -- we got a newer entry for this target than this, so this one can go
-      delete[#delete+1] = entry
-
-    else
-      -- haven't got this one, so this is the current state for this target
-      seen[entry.target] = true
-      if entry.weight == 0 then
-        delete[#delete+1] = entry
-      end
-    end
-  end
-
-  -- do we need to cleanup?
-  if #delete > #targets * (1 - cleanup_factor) then
-
-    ngx.log(ngx.NOTICE, "[Target DAO] Starting cleanup of target table for upstream ",
-               tostring(upstream_pk.id))
-    local cnt = 0
-    -- reverse again; so deleting oldest entries first
-    for i = #delete, 1, -1 do
-      local entry = delete[i]
-
-      -- notice super - this is real delete (not creating a new entity with weight = 0)
-      self.super.delete(self, { id = entry.id })
-      -- ignoring errors here, deleted by id, so should not matter
-      -- in case another kong-node does the same cleanup simultaneously
-      cnt = cnt + 1
-    end
-
-    ngx.log(ngx.INFO, "[Target DAO] Finished cleanup of target table",
-      " for upstream ", tostring(upstream_pk.id),
-      " removed ", tostring(cnt), " target entries")
-  end
-end
-
-
 local function format_target(target)
   local p = utils.normalize_ip(target)
   if not p then
@@ -101,11 +45,6 @@ function _TARGETS:insert(entity, options)
     end
     entity.target = formatted_target
   end
-
-  -- cleaning up will NOT send invalidation events, hence we only add the new
-  -- entry AFTER the cleanup, such that the cleanup will be picked up by the
-  -- other nodes based on the event of the newly added entry
-  clean_history(self, entity.upstream)
 
   return self.super.insert(self, entity, options)
 end
