@@ -58,6 +58,26 @@ describe("kong start/stop #" .. strategy, function()
     assert.truthy(helpers.path.exists(helpers.test_conf.kong_env))
   end)
 
+  it("should not add [emerg], [alert], [crit], [error] or [warn] lines to error log", function()
+    assert(helpers.kong_exec("start ", {
+      prefix = helpers.test_conf.prefix,
+      stream_listen = "127.0.0.1:9022",
+      status_listen = "0.0.0.0:8100",
+    }))
+    assert(helpers.kong_exec("stop", {
+      prefix = helpers.test_conf.prefix
+    }))
+
+    local pl_file = require "pl.file"
+    local err_log = pl_file.read(helpers.test_conf.nginx_err_logs)
+
+    assert.not_matches("[emerg]", err_log, nil, true)
+    assert.not_matches("[alert]", err_log, nil, true)
+    assert.not_matches("[crit]", err_log, nil, true)
+    assert.not_matches("[error]", err_log, nil, true)
+    assert.not_matches("[warn]", err_log, nil, true)
+  end)
+
   if strategy == "cassandra" then
     it("start resolves cassandra contact points", function()
       assert(helpers.kong_exec("start", {

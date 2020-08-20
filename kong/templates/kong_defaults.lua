@@ -71,12 +71,6 @@ nginx_stream_ssl_session_tickets = NONE
 nginx_stream_ssl_session_timeout = NONE
 nginx_proxy_real_ip_header = X-Real-IP
 nginx_proxy_real_ip_recursive = off
-nginx_upstream_keepalive = 60
-nginx_upstream_keepalive_requests = 100
-nginx_upstream_keepalive_timeout = 60s
-nginx_http_upstream_keepalive = 60
-nginx_http_upstream_keepalive_requests = 100
-nginx_http_upstream_keepalive_timeout = 60s
 
 client_max_body_size = 0
 client_body_buffer_size = 8k
